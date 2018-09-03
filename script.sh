@@ -1,6 +1,8 @@
 #!/bin/bash
 
 
+
+
 read -p  "debian or centos?" OS
 
 read -p  "Count of ip?" IPCOUNT
@@ -8,8 +10,7 @@ read -p  "Count of ip?" IPCOUNT
 
 function prepList()
 {
-    printf "                       \
-  " > .iplist
+    printf "" > .iplist
 
     readarray array < .iplist
 
@@ -91,7 +92,7 @@ function ADDifcfg_Debian()
 	ip=1
 	for i in $(seq $FROM $TO)
 	do
-		printf "\nauto eth0:${i}\niface eth0:${i} inet static\naddress=$(sed -n ${ip}p .generated_list)\nnetmask=255.255.255.255\n\n"  # > /etc/network/interfaces
+		printf "\nauto eth0:${i}\niface eth0:${i} inet static\naddress $(sed -n ${ip}p .generated_list)\nnetmask 255.255.255.255\n\n"  # >> /etc/network/interfaces
 		ip=$(($ip+1))
 	done
 	
@@ -111,6 +112,18 @@ function networkReload()
 }
 
 
+function networkReloadDeb()
+{
+	while true; do
+    read -p "Restart networking? " yn
+    case $yn in
+        [Yy]* ) /etc/init.d/network restart; ip a; exit  ;;
+        [Nn]* ) exit;;
+        * ) echo "Please answer yes or no.";;
+    esac
+	done
+}
+
 function clead()
 {
 	rm -f .iplist
@@ -122,13 +135,15 @@ function clead()
 
 case $OS in
 	"debian" )
+		apt -y install fping
 		prepList
 		ipPrechek 
 		ADDifcfg_Debian
 		clead
-		networkReload
+		networkReloadDeb
 		;;
 	"centos" )
+		yum -y install fping
 		prepList
 		ipPrechek 
 		ADDifcfg_Centos
