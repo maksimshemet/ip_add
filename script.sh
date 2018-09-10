@@ -1,21 +1,10 @@
 #!/bin/bash
 
 
-
-
 read -p  "debian or centos?" OS
 
 read -p  "Count of ip?" IPCOUNT
-
-
-function prepList()
-{
-    printf "" > .iplist
-
-    readarray array < .iplist
-
-    }
-
+ip=0
 
 function ipPrechek()
 {
@@ -43,6 +32,73 @@ function ipPrechek()
 
 
 }
+
+
+function neIPselect()
+{
+
+{	
+ip0=$(fping -q -g -u 192.168.1.1/27 | wc -l)
+echo 10
+ip1=$(fping -q -g -u 192.168.1.1/27 | wc -l)
+echo 20
+ip2=$(fping -q -g -u 192.168.1.1/28 | wc -l)
+echo 30
+ip3=$(fping -q -g -u 192.168.1.1/26 | wc -l)
+echo 40
+ip4=$(fping -q -g -u 192.168.1.1/27 | wc -l)
+echo 50
+ip5=$(fping -q -g -u 192.168.1.1/27 | wc -l)
+echo 60
+ip6=$(fping -q -g -u 192.168.1.1/27 | wc -l)
+echo 70
+ip7=$(fping -q -g -u 192.168.1.1/27 | wc -l)
+echo 80
+ip8=$(fping -q -g -u 192.168.1.1/27 | wc -l)
+echo 90
+ip9=$(fping -q -g -u 192.168.1.1/30 | wc -l)
+echo 100
+
+ip=$(whiptail --title "Subnets" --radiolist \
+        "Choose subnet:" 20 78 10 \
+        "192.168.1.1/27" "UA free ip = $ip0" ON \
+        "192.168.1.1/27" "UA free ip = $ip1" OFF \
+        "192.168.1.1/28" "UA free ip = $ip2" OFF \
+        "192.168.1.1/26" "UA free ip = $ip3" OFF \
+        "192.168.1.1/27" "UA free ip = $ip4" OFF \
+        "192.168.1.1/27" "UA free ip = $ip5" OFF \
+        "192.168.1.1/27" "UA free ip = $ip6" OFF \
+        "192.168.1.1/27" "UA free ip = $ip7" OFF \
+        "192.168.1.1/27" "UA free ip = $ip8" OFF \
+        "192.168.1.1/30" "UA free ip = $ip9" OFF  3>&1 1>&2 2>&3)
+echo $ip > .ip
+} | whiptail --gauge  "Please wait while installing" 6 60 0
+
+
+fping -q -g -u $(cat .ip) > .generated_list
+while read LINE
+do
+        array+=($LINE)
+        array+=("")
+        array+=("off")
+done < .generated_list
+
+var=$(whiptail --title "IP" --checklist "choose IPs" 16 78 10 "${array[@]}" 3>&1 1>&2 2>&3)
+echo $var | sed s/'"'//g | sed 's/ /\n/g' > .generated_list
+
+cat .generated_list
+while true; do
+    	read -p "Correct IPs ?" yn
+    	case $yn in
+        	[Yy]* ) return 0 ;;
+        	[Nn]* ) neIPselect;;
+        	* ) echo "Please answer yes or no.";;
+    	esac
+	done
+
+}
+
+
 
 
 
@@ -126,8 +182,30 @@ function networkReloadDeb()
 
 function clead()
 {
-	rm -f .iplist
+	rm -f .ip
 	rm -f .generated_list
+	rm -f $0
+}
+
+function genTicket()
+{
+	printf "
+
+########################################### TICKET ##########################################
+
+Hello,
+If ip was used before please ru-use
+
+Additional IPs:
+$(cat .generated_list)
+
+Main VPS ip - $(curl -s 2ip.ru)
+VPS Name is $(hostname) 
+
+
+
+
+" 
 }
 
 
@@ -136,17 +214,17 @@ function clead()
 case $OS in
 	"debian" )
 		apt -y install fping
-		prepList
-		ipPrechek 
+		neIPselect
 		ADDifcfg_Debian
+		genTicket
 		clead
 		networkReloadDeb
 		;;
 	"centos" )
 		yum -y install fping
-		prepList
-		ipPrechek 
+		neIPselect 
 		ADDifcfg_Centos
+		genTicket
 		clead
 		networkReload
 		;;
